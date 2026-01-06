@@ -1,2 +1,0 @@
-C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\win-x64\CPU Interface.pdb
-C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\win-x64\CPU Interface.exe
