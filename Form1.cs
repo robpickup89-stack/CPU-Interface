@@ -17,6 +17,10 @@ namespace CPU_Interface
         private readonly StringBuilder rxBuffer = new StringBuilder();
         private readonly List<string> allReceivedLines = new List<string>();
 
+        // FFS (Fault log) mode state
+        private bool ffsMode = false;
+        private System.Windows.Forms.Timer? ffsTimer;
+
         // Fullscreen state
         private bool isFullscreen = false;
         private FormWindowState previousWindowState;
@@ -25,6 +29,11 @@ namespace CPU_Interface
         // Detection flag patterns
         private static readonly Regex DetectorFlagRegex = new Regex(
             @"DET\.\s+(\S+)\s+([FONS\-]{5})",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        // FFS fault log pattern: FFS [FLF_NUMBER]:[255] [DESCRIPTION]
+        private static readonly Regex FfsFaultRegex = new Regex(
+            @"^FFS\s+(\d+):(\d+)\s+(.+)$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         // ==============================
@@ -315,6 +324,11 @@ namespace CPU_Interface
             // Store initial window state for fullscreen toggle
             previousWindowState = WindowState;
             previousBorderStyle = FormBorderStyle;
+
+            // Initialize FFS timer for auto-sending "+" during fault log retrieval
+            ffsTimer = new System.Windows.Forms.Timer();
+            ffsTimer.Interval = 500; // 500ms delay between "+" sends
+            ffsTimer.Tick += FfsTimer_Tick;
         }
 
         // ==============================
@@ -368,6 +382,43 @@ namespace CPU_Interface
         }
 
         // ==============================
+        // FFS TIMER (Auto-send "+" for fault log)
+        // ==============================
+        private void FfsTimer_Tick(object? sender, EventArgs e)
+        {
+            if (ffsMode && serialPort2 != null && serialPort2.IsOpen)
+            {
+                serialPort2.Write("+\r\n");
+                textBox1.AppendText($"> [{serialPort2.PortName}] +{Environment.NewLine}");
+            }
+            ffsTimer?.Stop();
+        }
+
+        // ==============================
+        // SIEMENS INITIAL CONNECT SEQUENCE
+        // ==============================
+        private async void SendSiemensInitSequence()
+        {
+            if (serialPort2 == null || !serialPort2.IsOpen) return;
+
+            // Send "f" characters to wake up the Siemens controller
+            // and get the "SIEMENS" response
+            for (int i = 0; i < 3; i++)
+            {
+                await System.Threading.Tasks.Task.Delay(300);
+                try
+                {
+                    if (serialPort2.IsOpen)
+                    {
+                        serialPort2.Write("f\r\n");
+                        textBox1.AppendText($"> [{serialPort2.PortName}] f (init){Environment.NewLine}");
+                    }
+                }
+                catch { break; }
+            }
+        }
+
+        // ==============================
         // CLEAR BUTTON
         // ==============================
         private void btnClear_Click(object? sender, EventArgs e)
@@ -376,6 +427,8 @@ namespace CPU_Interface
             textBox3.Clear();
             allReceivedLines.Clear();
             rxBuffer.Clear();
+            ffsMode = false;
+            ffsTimer?.Stop();
             UpdateStatusBar();
         }
 
@@ -464,6 +517,9 @@ namespace CPU_Interface
 
                     textBox1.AppendText($"[CONNECTED] Siemens @ 1200 baud on {serialPort2.PortName}{Environment.NewLine}");
                     UpdateStatusBar();
+
+                    // Send initial sequence to get "SIEMENS" response
+                    SendSiemensInitSequence();
                 }
                 else
                 {
@@ -471,6 +527,10 @@ namespace CPU_Interface
                     button2.Text = "Siemens (1200)";
                     button2.BackColor = SystemColors.Control;
                     button2.ForeColor = SystemColors.ControlText;
+
+                    // Reset FFS mode on disconnect
+                    ffsMode = false;
+                    ffsTimer?.Stop();
 
                     textBox1.AppendText($"[DISCONNECTED] Siemens{Environment.NewLine}");
                     UpdateStatusBar();
@@ -582,6 +642,9 @@ namespace CPU_Interface
                         if (!string.IsNullOrEmpty(line))
                         {
                             allReceivedLines.Add(line);
+
+                            // Handle FFS fault log mode
+                            HandleFfsResponse(line);
                         }
                     }
 
@@ -596,6 +659,37 @@ namespace CPU_Interface
                 {
                     textBox1.AppendText($"[RX ERROR] {ex.Message}{Environment.NewLine}");
                 }));
+            }
+        }
+
+        // ==============================
+        // HANDLE FFS/FLF (FAULT LOG) RESPONSES
+        // ==============================
+        private void HandleFfsResponse(string line)
+        {
+            string upperLine = line.ToUpper().Trim();
+
+            // Check for END OF LOG - stop auto-sending "+"
+            if (upperLine.Contains("END OF LOG"))
+            {
+                ffsMode = false;
+                ffsTimer?.Stop();
+                textBox1.AppendText($"[FAULT LOG COMPLETE]{Environment.NewLine}");
+                return;
+            }
+
+            // Check for FFS or FLF fault entry - need to send "+" to continue
+            // FFS format: FFS 12:255 DFM-DSF
+            // FLF format: FLF 0:0
+            bool isFfsEntry = upperLine.StartsWith("FFS") && !upperLine.Equals("FFS");
+            bool isFlFEntry = upperLine.StartsWith("FLF") && upperLine.Contains(":");
+
+            if (isFfsEntry || isFlFEntry)
+            {
+                ffsMode = true;
+                // Start timer to send "+" after a short delay
+                ffsTimer?.Stop();
+                ffsTimer?.Start();
             }
         }
 
@@ -693,6 +787,26 @@ namespace CPU_Interface
             if (string.IsNullOrWhiteSpace(line)) return "UNKNOWN";
 
             var tokens = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+
+            // 0) Check for FFS format: FFS [NUMBER]:255 [DESCRIPTION]
+            //    Convert to FLF:[NUMBER] for lookup
+            var ffsMatch = FfsFaultRegex.Match(line);
+            if (ffsMatch.Success)
+            {
+                string flfNumber = ffsMatch.Groups[1].Value;
+                return $"FLF:{flfNumber}";
+            }
+
+            // 0b) Check for FLF format: FLF [NUMBER]:[NUMBER]
+            //     Convert to FLF:[NUMBER] for lookup
+            if (tokens.Length >= 2 && tokens[0].Equals("FLF", StringComparison.OrdinalIgnoreCase))
+            {
+                string[] parts = tokens[1].Split(':');
+                if (parts.Length >= 1 && int.TryParse(parts[0], out int flfNum))
+                {
+                    return $"FLF:{flfNum}";
+                }
+            }
 
             // 1) Prefer FLF:#
             var flfToken = Array.Find(tokens, t => t.StartsWith("FLF:", StringComparison.OrdinalIgnoreCase));
