@@ -1,0 +1,26 @@
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\CPU Interface.exe
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\CPU Interface.dll
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\CPU Interface.deps.json
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\CPU Interface.runtimeconfig.json
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\CPU Interface.pdb
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\HtmlAgilityPack.dll
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\HtmlAgilityPack.NetCore.dll
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\System.IO.Ports.dll
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\android-arm\native\libSystem.IO.Ports.Native.so
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\android-arm64\native\libSystem.IO.Ports.Native.so
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\android-x64\native\libSystem.IO.Ports.Native.so
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\android-x86\native\libSystem.IO.Ports.Native.so
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\linux-arm\native\libSystem.IO.Ports.Native.so
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\linux-arm64\native\libSystem.IO.Ports.Native.so
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\linux-bionic-arm64\native\libSystem.IO.Ports.Native.so
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\linux-bionic-x64\native\libSystem.IO.Ports.Native.so
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\linux-musl-arm\native\libSystem.IO.Ports.Native.so
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\linux-musl-arm64\native\libSystem.IO.Ports.Native.so
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\linux-musl-x64\native\libSystem.IO.Ports.Native.so
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\linux-x64\native\libSystem.IO.Ports.Native.so
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\maccatalyst-arm64\native\libSystem.IO.Ports.Native.dylib
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\maccatalyst-x64\native\libSystem.IO.Ports.Native.dylib
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\osx-arm64\native\libSystem.IO.Ports.Native.dylib
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\osx-x64\native\libSystem.IO.Ports.Native.dylib
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\unix\lib\net8.0\System.IO.Ports.dll
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\publish\runtimes\win\lib\net8.0\System.IO.Ports.dll

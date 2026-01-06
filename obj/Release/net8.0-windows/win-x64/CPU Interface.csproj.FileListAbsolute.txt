@@ -1,0 +1,22 @@
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\win-x64\CPU Interface.exe
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\win-x64\CPU Interface.deps.json
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\win-x64\CPU Interface.runtimeconfig.json
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\win-x64\CPU Interface.dll
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\win-x64\CPU Interface.pdb
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\win-x64\HtmlAgilityPack.dll
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\win-x64\HtmlAgilityPack.NetCore.dll
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\bin\Release\net8.0-windows\win-x64\System.IO.Ports.dll
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\obj\Release\net8.0-windows\win-x64\CPU Interface.csproj.AssemblyReference.cache
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\obj\Release\net8.0-windows\win-x64\CPU_Interface.Form1.resources
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\obj\Release\net8.0-windows\win-x64\CPU Interface.csproj.GenerateResource.cache
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\obj\Release\net8.0-windows\win-x64\CPU Interface.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\obj\Release\net8.0-windows\win-x64\CPU Interface.AssemblyInfoInputs.cache
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\obj\Release\net8.0-windows\win-x64\CPU Interface.AssemblyInfo.cs
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\obj\Release\net8.0-windows\win-x64\CPU Interface.csproj.CoreCompileInputs.cache
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\obj\Release\net8.0-windows\win-x64\CPU Inte.E9B1A648.Up2Date
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\obj\Release\net8.0-windows\win-x64\CPU Interface.dll
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\obj\Release\net8.0-windows\win-x64\refint\CPU Interface.dll
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\obj\Release\net8.0-windows\win-x64\CPU Interface.pdb
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\obj\Release\net8.0-windows\win-x64\CPU Interface.genruntimeconfig.cache
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\obj\Release\net8.0-windows\win-x64\ref\CPU Interface.dll
+C:\Users\josh.lockwood\source\repos\CPU Interface\CPU Interface\obj\Release\net8.0-windows\win-x64\CPU_Interface.Properties.Resources.resources
