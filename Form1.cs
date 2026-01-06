@@ -1,17 +1,10 @@
-// Form1.cs - FULL UPDATED VERSION
-// Fixes:
-// - Adds missing event handlers (textBox2_KeyDown, SerialPort1_DataReceived, SerialPort2_DataReceived)
-// - Fixes Dictionary duplicate keys (removed duplicate FLF:0)
-// - Fixes missing comma in dictionary (".DET. name S---" entry)
-// - Improves parsing so "FLF:3" AND "011:NO MAINS SYNC.MDU" both match
-// - Fixes nullability warnings + COM port null checks
-// - Adds 1200 receive support (Siemens)
-
+// Form1.cs - Improved UI with fullscreen support and detection flag parsing
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO.Ports;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 namespace CPU_Interface
@@ -23,6 +16,16 @@ namespace CPU_Interface
 
         private readonly StringBuilder rxBuffer = new StringBuilder();
         private readonly List<string> allReceivedLines = new List<string>();
+
+        // Fullscreen state
+        private bool isFullscreen = false;
+        private FormWindowState previousWindowState;
+        private FormBorderStyle previousBorderStyle;
+
+        // Detection flag patterns
+        private static readonly Regex DetectorFlagRegex = new Regex(
+            @"DET\.\s+(\S+)\s+([FONS\-]{5})",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         // ==============================
         // CPU FAULT DICTIONARY
@@ -93,81 +96,77 @@ namespace CPU_Interface
             { "253:MAINS ON", "System restart - mains restored." },
             { "255:FATAL ALARM", "Fatal fault reported - check other fault entries." },
 
-            // ------------------------------
-            // FLF CODES (key MUST be FLF:x only)
-            // ------------------------------
-            { "FLF:0",  "Not used – No action required." },
-            { "FLF:1",  "Conflict configuration error – Reload configuration and recheck conflict matrix." },
-            { "FLF:2",  "Phase Bus Safety Fault (PBUS) – Signals shut down. Power cycle; replace CPU/cards if repeats." },
-            { "FLF:3",  "Correspondence Fault (CORR) – Outputs not matching command. Check flash/relays/wiring; reset." },
-            { "FLF:4",  "Relay Test Failed (RLAY) – Signals won’t start. Check/replace relay hardware." },
-            { "FLF:5",  "Conflict Fault (CFT) – Conflicting greens detected. Check wiring/outputs/config." },
-            { "FLF:6",  "Power supply fault – Check PSU, fuses, internal voltages." },
-            { "FLF:7",  "Over temperature – Check ventilation, fans, cabinet heat." },
-            { "FLF:8",  "Watchdog trip (WDOG) – Power cycle. Replace CPU if recurring." },
-            { "FLF:9",  "Clock fault – Reset time / check battery." },
-            { "FLF:10", "Internal comms fault – Power cycle controller." },
-            { "FLF:11", "Memory fault (MEM) – Power cycle or replace CPU." },
-            { "FLF:12", "Detector fault monitor (DFM) – Check loops/cards/wiring." },
-            { "FLF:13", "I/O board fault – Check expansion cards match configuration." },
-            { "FLF:14", "CPU communication fault – Reseat/replace CPU; power cycle." },
-            { "FLF:15", "Configuration CRC error – Reload known good config." },
-            { "FLF:16", "Non-volatile memory fault – Replace CPU board." },
-            { "FLF:17", "Lamp supply fault – Check PSU/fuses/mains." },
-            { "FLF:18", "Ped detector fault – Check push button/wiring." },
-            { "FLF:19", "I/O failure – Check wiring and I/O cards." },
-            { "FLF:20", "Configuration error – Reload and recommission." },
-            { "FLF:21", "Initialisation failure – Power cycle; check hardware vs config." },
-            { "FLF:22", "Red lamp failure (RLM) – Check red aspect/LED module/wiring." },
-            { "FLF:23", "Amber lamp failure – Check amber aspect/LED module/wiring." },
-            { "FLF:24", "Green lamp failure – Check green aspect/LED module/wiring." },
-            { "FLF:25", "CPU link fault – Power cycle; replace CPU if repeats." },
-            { "FLF:26", "Timing error – Reload config; check timings." },
-            { "FLF:27", "Time-of-day fault – Check timetable/clock settings." },
-            { "FLF:28", "Mains sync fault – Check supply quality / sync circuits." },
-            { "FLF:29", "Flash mode fault – Check flash transitions/outputs/relays." },
-            { "FLF:30", "Manual control active – Return to auto." },
-            { "FLF:31", "Cabinet door open – Close door / check switch." },
-            { "FLF:32", "Panel open – Close panel / check switch." },
-            { "FLF:33", "Lamp output load fault – Check wiring / LED type." },
-            { "FLF:34", "Fuse failure – Check signal/PSU fuses." },
-            { "FLF:35", "Battery fault – Replace backup battery." },
-            { "FLF:36", "EEPROM write error – Settings not saving; replace CPU." },
-            { "FLF:37", "Aux supply fault – Check auxiliary PSU outputs." },
-            { "FLF:38", "External comms fault – Check OTU/UTC comms equipment." },
-            { "FLF:39", "OTU fault – Check OTU power/comms." },
-            { "FLF:40", "Invalid mode – Reset or reload config." },
-            { "FLF:41", "Detector config error – Check detector setup/config." },
-            { "FLF:42", "Input fault – Check wiring/inputs." },
-            { "FLF:43", "Output fault – Check driver card/output channel." },
-            { "FLF:44", "Stage fault – Check demands/config." },
-            { "FLF:45", "Stream fault – Check stream config." },
-            { "FLF:46", "Lamp config error – Check KLT/load settings; reload." },
-            { "FLF:47", "PSU monitoring fault – Check voltages/feedback." },
-            { "FLF:48", "CPU over temp – Improve cooling / replace CPU." },
-            { "FLF:49", "RAM test failure – Replace CPU." },
-            { "FLF:50", "Conflict data logged – Review details before reset." },
-            { "FLF:51", "Fault log full – Clear after investigation." },
-            { "FLF:52", "Deadlock detected – Check demands/config." },
-            { "FLF:53", "Detector load monitor fault – Check detector wiring/card." },
-            { "FLF:54", "Input data error – Power cycle." },
-            { "FLF:55", "Lamp monitor fault – Check lamps/loads." },
-            { "FLF:56", "Lamp monitor update required – Run KLR reset." },
-            { "FLF:57", "Lamp monitor reset failed – Retry with healthy lamps." },
-            { "FLF:58", "Integral OTU fault – Check or disable if not fitted." },
-            { "FLF:59", "Integral IMU fault – Check or disable if not fitted." },
-            { "FLF:60", "Redundant PSU fault – Check backup supply." },
-            { "FLF:61", "System warning – Review log." },
-            { "FLF:62", "Non-FLF fault present – Use WIZ/web fault table." },
+            // FLF CODES
+            { "FLF:0",  "Not used - No action required." },
+            { "FLF:1",  "Conflict configuration error - Reload configuration and recheck conflict matrix." },
+            { "FLF:2",  "Phase Bus Safety Fault (PBUS) - Signals shut down. Power cycle; replace CPU/cards if repeats." },
+            { "FLF:3",  "Correspondence Fault (CORR) - Outputs not matching command. Check flash/relays/wiring; reset." },
+            { "FLF:4",  "Relay Test Failed (RLAY) - Signals won't start. Check/replace relay hardware." },
+            { "FLF:5",  "Conflict Fault (CFT) - Conflicting greens detected. Check wiring/outputs/config." },
+            { "FLF:6",  "Power supply fault - Check PSU, fuses, internal voltages." },
+            { "FLF:7",  "Over temperature - Check ventilation, fans, cabinet heat." },
+            { "FLF:8",  "Watchdog trip (WDOG) - Power cycle. Replace CPU if recurring." },
+            { "FLF:9",  "Clock fault - Reset time / check battery." },
+            { "FLF:10", "Internal comms fault - Power cycle controller." },
+            { "FLF:11", "Memory fault (MEM) - Power cycle or replace CPU." },
+            { "FLF:12", "Detector fault monitor (DFM) - Check loops/cards/wiring." },
+            { "FLF:13", "I/O board fault - Check expansion cards match configuration." },
+            { "FLF:14", "CPU communication fault - Reseat/replace CPU; power cycle." },
+            { "FLF:15", "Configuration CRC error - Reload known good config." },
+            { "FLF:16", "Non-volatile memory fault - Replace CPU board." },
+            { "FLF:17", "Lamp supply fault - Check PSU/fuses/mains." },
+            { "FLF:18", "Ped detector fault - Check push button/wiring." },
+            { "FLF:19", "I/O failure - Check wiring and I/O cards." },
+            { "FLF:20", "Configuration error - Reload and recommission." },
+            { "FLF:21", "Initialisation failure - Power cycle; check hardware vs config." },
+            { "FLF:22", "Red lamp failure (RLM) - Check red aspect/LED module/wiring." },
+            { "FLF:23", "Amber lamp failure - Check amber aspect/LED module/wiring." },
+            { "FLF:24", "Green lamp failure - Check green aspect/LED module/wiring." },
+            { "FLF:25", "CPU link fault - Power cycle; replace CPU if repeats." },
+            { "FLF:26", "Timing error - Reload config; check timings." },
+            { "FLF:27", "Time-of-day fault - Check timetable/clock settings." },
+            { "FLF:28", "Mains sync fault - Check supply quality / sync circuits." },
+            { "FLF:29", "Flash mode fault - Check flash transitions/outputs/relays." },
+            { "FLF:30", "Manual control active - Return to auto." },
+            { "FLF:31", "Cabinet door open - Close door / check switch." },
+            { "FLF:32", "Panel open - Close panel / check switch." },
+            { "FLF:33", "Lamp output load fault - Check wiring / LED type." },
+            { "FLF:34", "Fuse failure - Check signal/PSU fuses." },
+            { "FLF:35", "Battery fault - Replace backup battery." },
+            { "FLF:36", "EEPROM write error - Settings not saving; replace CPU." },
+            { "FLF:37", "Aux supply fault - Check auxiliary PSU outputs." },
+            { "FLF:38", "External comms fault - Check OTU/UTC comms equipment." },
+            { "FLF:39", "OTU fault - Check OTU power/comms." },
+            { "FLF:40", "Invalid mode - Reset or reload config." },
+            { "FLF:41", "Detector config error - Check detector setup/config." },
+            { "FLF:42", "Input fault - Check wiring/inputs." },
+            { "FLF:43", "Output fault - Check driver card/output channel." },
+            { "FLF:44", "Stage fault - Check demands/config." },
+            { "FLF:45", "Stream fault - Check stream config." },
+            { "FLF:46", "Lamp config error - Check KLT/load settings; reload." },
+            { "FLF:47", "PSU monitoring fault - Check voltages/feedback." },
+            { "FLF:48", "CPU over temp - Improve cooling / replace CPU." },
+            { "FLF:49", "RAM test failure - Replace CPU." },
+            { "FLF:50", "Conflict data logged - Review details before reset." },
+            { "FLF:51", "Fault log full - Clear after investigation." },
+            { "FLF:52", "Deadlock detected - Check demands/config." },
+            { "FLF:53", "Detector load monitor fault - Check detector wiring/card." },
+            { "FLF:54", "Input data error - Power cycle." },
+            { "FLF:55", "Lamp monitor fault - Check lamps/loads." },
+            { "FLF:56", "Lamp monitor update required - Run KLR reset." },
+            { "FLF:57", "Lamp monitor reset failed - Retry with healthy lamps." },
+            { "FLF:58", "Integral OTU fault - Check or disable if not fitted." },
+            { "FLF:59", "Integral IMU fault - Check or disable if not fitted." },
+            { "FLF:60", "Redundant PSU fault - Check backup supply." },
+            { "FLF:61", "System warning - Review log." },
+            { "FLF:62", "Non-FLF fault present - Use WIZ/web fault table." },
 
-            // ------------------------------
             // TEXTUAL ERROR CODES
-            // ------------------------------
             { "LCM-1-255 ERR", "LCM unit failed or missing." },
-            { "IO1616-1", "IO16 Card 1 error - failed/missing. Check addressing." },
-            { "IO1616-2", "IO16 Card 2 error - failed/missing. Check addressing." },
-            { "IO1616-3", "IO16 Card 3 error - failed/missing. Check addressing." },
-            { "IO1616-4", "IO16 Card 4 error - failed/missing. Check addressing." },
+            { "IO1616-1 ERR", "IO16 Card 1 error - failed/missing. Check addressing." },
+            { "IO1616-2 ERR", "IO16 Card 2 error - failed/missing. Check addressing." },
+            { "IO1616-3 ERR", "IO16 Card 3 error - failed/missing. Check addressing." },
+            { "IO1616-4 ERR", "IO16 Card 4 error - failed/missing. Check addressing." },
             { "IO1616-5 ERR", "IO16 Card 5 error - failed/missing. Check addressing." },
             { "IO1616-6 ERR", "IO16 Card 6 error - failed/missing. Check addressing." },
             { "IO1616-7 ERR", "IO16 Card 7 error - failed/missing. Check addressing." },
@@ -183,92 +182,89 @@ namespace CPU_Interface
             { ".08:LOV-LOV", "Voltage measurement circuits disagree - faulty LCM." },
             { ".09:HALF-WAVING", "Half-waving detected - faulty LCM/output switch." },
             { "12:LAMP ERR", "Lamp failure - broken lamp." },
-            {"OMS ERR G01 (0):", "A Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure" },
-            {"OMS ERR G01 (1):", "A Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure" },
-            {"OMS ERR G01 (2):", "A Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure" },
-            {"OMS ERR G01 (3):", "A Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure" },
-            {"OMS ERR G01 (4):", "A Phase green - Green Non Equivalence, Fuse blown, Triac failure, Voltage sensor failure" },
-            {"OMS ERR G01 (5):", "A Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure" },
-            {"OMS ERR G02 (0):", "B Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G02 (1):", "B Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G02 (2):", "B Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G02 (3):", "B Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G02 (4):", "B Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G02 (5):", "B Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
+            { "IOTU-1 ERR", "UG405 issue - check OTU configuration." },
+            { "MTS4BP-1 ERR", "Backplane issue - check addressing." },
+            { "SWOF XP", "Stream switch off - stage fault detected." },
+
+            // OMS ERRORS
+            {"OMS ERR G01 (0)", "A Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure" },
+            {"OMS ERR G01 (1)", "A Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure" },
+            {"OMS ERR G01 (2)", "A Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure" },
+            {"OMS ERR G01 (3)", "A Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure" },
+            {"OMS ERR G01 (4)", "A Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure" },
+            {"OMS ERR G01 (5)", "A Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure" },
+            {"OMS ERR G02 (0)", "B Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G02 (1)", "B Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G02 (2)", "B Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G02 (3)", "B Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G02 (4)", "B Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G02 (5)", "B Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
             {"OMS ERR G03 (0)", "C Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
-            {" OMS ERR G03 (1)", "C Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G03 (1)", "C Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
             {"OMS ERR G03 (2)", "C Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
             {"OMS ERR G03 (3)", "C Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
             {"OMS ERR G03 (4)", "C Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
             {"OMS ERR G03 (5)", "C Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G04 (0):", "D Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G04 (1):", "D Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G04 (2):", "D Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G04 (3):", "D Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G04 (4):", "D Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G04 (5):", "D Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G05 (0):", "E Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G05 (1):", "E Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G05 (2):", "E Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G05 (3):", "E Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G05 (4):", "E Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G05 (5):", "E Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G06 (0):", "F Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G06 (1):", "F Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G06 (2):", "F Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G06 (3):", "F Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G06 (4):", "F Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G06 (5):", "F Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G07 (0):", "G Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G07 (1):", "G Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G07 (2):", "G Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G07 (3):", "G Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G07 (4):", "G Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G07 (5):", "G Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G08 (0):", "H Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G08 (1):", "H Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G08 (2):", "H Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G08 (3):", "H Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G08 (4):", "H Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G08 (5):", "H Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G09 (0):", "I Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G09 (1):", "I Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G09 (2):", "I Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G09 (3):", "I Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G09 (4):", "I Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G09 (5):", "I Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G10 (0):", "J Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G10 (1):", "J Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G10 (2):", "J Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G10 (3):", "J Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G10 (4):", "J Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G10 (5):", "J Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G11 (0):", "K Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G11 (1):", "K Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G11 (2):", "K Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G11 (3):", "K Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G11 (4):", "K Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G11 (5):", "K Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G12 (0):", "L Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G12 (1):", "L Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G12 (2):", "L Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G12 (3):", "L Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G12 (4):", "L Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G12 (5):", "L Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G13 (0):", "M Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G13 (1):", "M Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G13 (2):", "M Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G13 (3):", "M Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G13 (4):", "M Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
-            {"OMS ERR G13 (5):", "M Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
-
-            // NOTE: these “DET. name …” won’t match exactly unless you map actual detector names.
-            { "DET. name –N-", "Detector not active - open loop." },
-            { "DET. name –O-", "Detector active - short loop." },
-            { "DET. name –F-", "Detector fault - short loop." },
-            { "IOTU-1 ERR", "UG405 issue." },
-            { "MTS4BP-1 ERR", "Backplane issue - check addressing." },
-            { ".DET. name S---", "Detector override - check detector/push button card." } // <-- fixed (comma ok)
+            {"OMS ERR G04 (0)", "D Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G04 (1)", "D Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G04 (2)", "D Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G04 (3)", "D Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G04 (4)", "D Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G04 (5)", "D Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G05 (0)", "E Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G05 (1)", "E Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G05 (2)", "E Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G05 (3)", "E Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G05 (4)", "E Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G05 (5)", "E Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G06 (0)", "F Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G06 (1)", "F Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G06 (2)", "F Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G06 (3)", "F Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G06 (4)", "F Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G06 (5)", "F Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G07 (0)", "G Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G07 (1)", "G Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G07 (2)", "G Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G07 (3)", "G Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G07 (4)", "G Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G07 (5)", "G Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G08 (0)", "H Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G08 (1)", "H Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G08 (2)", "H Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G08 (3)", "H Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G08 (4)", "H Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G08 (5)", "H Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G09 (0)", "I Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G09 (1)", "I Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G09 (2)", "I Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G09 (3)", "I Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G09 (4)", "I Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G09 (5)", "I Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G10 (0)", "J Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G10 (1)", "J Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G10 (2)", "J Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G10 (3)", "J Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G10 (4)", "J Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G10 (5)", "J Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G11 (0)", "K Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G11 (1)", "K Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G11 (2)", "K Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G11 (3)", "K Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G11 (4)", "K Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G11 (5)", "K Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G12 (0)", "L Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G12 (1)", "L Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G12 (2)", "L Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G12 (3)", "L Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G12 (4)", "L Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G12 (5)", "L Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G13 (0)", "M Phase green - Unknown. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G13 (1)", "M Phase green - illegal ON. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G13 (2)", "M Phase green - illegal OFF. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G13 (3)", "M Phase green - Half Waving. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G13 (4)", "M Phase green - Green Non Equivalence. Fuse blown, Triac failure, Voltage sensor failure"},
+            {"OMS ERR G13 (5)", "M Phase green - LOC/LOC Difference. Fuse blown, Triac failure, Voltage sensor failure"},
         };
 
         // ==============================
@@ -278,26 +274,15 @@ namespace CPU_Interface
         {
             InitializeComponent();
 
-            WindowState = FormWindowState.Maximized;
-            StartPosition = FormStartPosition.CenterScreen;
-
-            button1.Text = "PTC1";
-            button2.Text = "Siemens";
-
+            // Initialize COM port dropdown
             comboBoxPTC1.Items.Clear();
-            for (int i = 1; i <= 10; i++)
+            for (int i = 1; i <= 20; i++)
                 comboBoxPTC1.Items.Add("COM" + i);
             comboBoxPTC1.SelectedIndex = 0;
 
-            textBox1.Multiline = true;
-            textBox1.ReadOnly = true;
-            textBox1.ScrollBars = ScrollBars.Vertical;
-
+            // Wire up keyboard events
             textBox2.KeyDown += textBox2_KeyDown;
-
-            textBox3.Multiline = true;
-            textBox3.ReadOnly = true;
-            textBox3.ScrollBars = ScrollBars.Vertical;
+            KeyDown += Form1_KeyDown;
 
             // SERIAL PORT 1 (9600)
             serialPort1 = new SerialPort
@@ -322,18 +307,85 @@ namespace CPU_Interface
                 Encoding = Encoding.ASCII
             };
             serialPort2.DataReceived += SerialPort2_DataReceived;
+
+            // Store initial window state for fullscreen toggle
+            previousWindowState = WindowState;
+            previousBorderStyle = FormBorderStyle;
+        }
+
+        // ==============================
+        // FULLSCREEN TOGGLE (F11)
+        // ==============================
+        private void Form1_KeyDown(object? sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.F11)
+            {
+                ToggleFullscreen();
+                e.Handled = true;
+            }
+            else if (e.KeyCode == Keys.Escape && isFullscreen)
+            {
+                ToggleFullscreen();
+                e.Handled = true;
+            }
+        }
+
+        private void ToggleFullscreen()
+        {
+            if (!isFullscreen)
+            {
+                // Enter fullscreen
+                previousWindowState = WindowState;
+                previousBorderStyle = FormBorderStyle;
+
+                WindowState = FormWindowState.Normal;
+                FormBorderStyle = FormBorderStyle.None;
+                WindowState = FormWindowState.Maximized;
+
+                btnFullscreen.Text = "Exit (F11)";
+                statusLabelFullscreen.Text = "Press F11 or ESC to exit fullscreen";
+                isFullscreen = true;
+            }
+            else
+            {
+                // Exit fullscreen
+                FormBorderStyle = previousBorderStyle;
+                WindowState = previousWindowState;
+
+                btnFullscreen.Text = "Fullscreen";
+                statusLabelFullscreen.Text = "Press F11 for fullscreen";
+                isFullscreen = false;
+            }
+        }
+
+        private void btnFullscreen_Click(object? sender, EventArgs e)
+        {
+            ToggleFullscreen();
+        }
+
+        // ==============================
+        // CLEAR BUTTON
+        // ==============================
+        private void btnClear_Click(object? sender, EventArgs e)
+        {
+            textBox1.Clear();
+            textBox3.Clear();
+            allReceivedLines.Clear();
+            rxBuffer.Clear();
+            UpdateStatusBar();
         }
 
         // ==============================
         // BUTTON 1 (9600 baud)
         // ==============================
-        private void button1_Click(object sender, EventArgs e)
+        private void button1_Click(object? sender, EventArgs e)
         {
             try
             {
                 if (!serialPort1.IsOpen && serialPort2.IsOpen)
                 {
-                    MessageBox.Show("COM port already in use.\nPlease disconnect the other connection.");
+                    MessageBox.Show("COM port already in use.\nPlease disconnect the other connection.",
+                        "Connection Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -342,42 +394,50 @@ namespace CPU_Interface
                     var port = comboBoxPTC1.SelectedItem as string;
                     if (string.IsNullOrWhiteSpace(port))
                     {
-                        MessageBox.Show("Please select a COM port.");
+                        MessageBox.Show("Please select a COM port.",
+                            "Port Selection", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return;
                     }
 
                     serialPort1.PortName = port;
                     serialPort1.Open();
 
-                    button1.Text = "Disconnect";
-                    button1.BackColor = Color.LightGreen;
+                    button1.Text = "DISCONNECT";
+                    button1.BackColor = Color.FromArgb(60, 140, 60);
+                    button1.FlatAppearance.BorderColor = Color.FromArgb(80, 160, 80);
 
-                    textBox1.AppendText($"[CONNECTED 9600 {serialPort1.PortName}]{Environment.NewLine}");
+                    textBox1.AppendText($"[CONNECTED] PTC1 @ 9600 baud on {serialPort1.PortName}{Environment.NewLine}");
+                    UpdateStatusBar();
                 }
                 else
                 {
                     serialPort1.Close();
-                    button1.Text = "PTC1";
-                    button1.BackColor = SystemColors.Control;
-                    textBox1.AppendText("[DISCONNECTED 9600]" + Environment.NewLine);
+                    button1.Text = "PTC1 (9600)";
+                    button1.BackColor = Color.FromArgb(60, 60, 65);
+                    button1.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
+
+                    textBox1.AppendText($"[DISCONNECTED] PTC1{Environment.NewLine}");
+                    UpdateStatusBar();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                MessageBox.Show($"Connection error: {ex.Message}",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         // ==============================
         // BUTTON 2 (1200 baud)
         // ==============================
-        private void button2_Click(object sender, EventArgs e)
+        private void button2_Click(object? sender, EventArgs e)
         {
             try
             {
                 if (!serialPort2.IsOpen && serialPort1.IsOpen)
                 {
-                    MessageBox.Show("COM port already in use.\nPlease disconnect the other connection.");
+                    MessageBox.Show("COM port already in use.\nPlease disconnect the other connection.",
+                        "Connection Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -386,30 +446,61 @@ namespace CPU_Interface
                     var port = comboBoxPTC1.SelectedItem as string;
                     if (string.IsNullOrWhiteSpace(port))
                     {
-                        MessageBox.Show("Please select a COM port.");
+                        MessageBox.Show("Please select a COM port.",
+                            "Port Selection", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return;
                     }
 
                     serialPort2.PortName = port;
                     serialPort2.Open();
 
-                    button2.Text = "Disconnect";
-                    button2.BackColor = Color.LightBlue;
+                    button2.Text = "DISCONNECT";
+                    button2.BackColor = Color.FromArgb(60, 100, 140);
+                    button2.FlatAppearance.BorderColor = Color.FromArgb(80, 120, 160);
 
-                    textBox1.AppendText($"[CONNECTED 1200 {serialPort2.PortName}]{Environment.NewLine}");
+                    textBox1.AppendText($"[CONNECTED] Siemens @ 1200 baud on {serialPort2.PortName}{Environment.NewLine}");
+                    UpdateStatusBar();
                 }
                 else
                 {
                     serialPort2.Close();
-                    button2.Text = "Siemens";
-                    button2.BackColor = SystemColors.Control;
-                    textBox1.AppendText("[DISCONNECTED 1200]" + Environment.NewLine);
+                    button2.Text = "Siemens (1200)";
+                    button2.BackColor = Color.FromArgb(60, 60, 65);
+                    button2.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
+
+                    textBox1.AppendText($"[DISCONNECTED] Siemens{Environment.NewLine}");
+                    UpdateStatusBar();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                MessageBox.Show($"Connection error: {ex.Message}",
+                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        // ==============================
+        // STATUS BAR UPDATE
+        // ==============================
+        private void UpdateStatusBar()
+        {
+            string connectionStatus = "DISCONNECTED";
+            string baudRate = "--";
+
+            if (serialPort1 != null && serialPort1.IsOpen)
+            {
+                connectionStatus = $"CONNECTED ({serialPort1.PortName})";
+                baudRate = "9600";
+            }
+            else if (serialPort2 != null && serialPort2.IsOpen)
+            {
+                connectionStatus = $"CONNECTED ({serialPort2.PortName})";
+                baudRate = "1200";
+            }
+
+            statusLabelConnection.Text = connectionStatus;
+            statusLabelBaud.Text = $"Baud: {baudRate}";
+            statusLabelMessages.Text = $"Messages: {allReceivedLines.Count}";
         }
 
         // ==============================
@@ -425,8 +516,7 @@ namespace CPU_Interface
 
         private void SendCommand()
         {
-            // Pick whichever port is connected (9600 or 1200)
-            SerialPort activePort = null;
+            SerialPort? activePort = null;
 
             if (serialPort1 != null && serialPort1.IsOpen)
                 activePort = serialPort1;
@@ -435,22 +525,18 @@ namespace CPU_Interface
 
             if (activePort == null)
             {
-                MessageBox.Show("No COM port connected");
+                MessageBox.Show("No COM port connected.",
+                    "Not Connected", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
             string cmd = textBox2.Text.Trim();
             if (cmd.Length == 0) return;
 
-            // Show what we're sending + which port
-            textBox1.AppendText($"> [{activePort.PortName} {activePort.BaudRate}] {cmd}\r\n");
-
-            // Many controllers expect CRLF; if yours needs CR only, change to "\r"
+            textBox1.AppendText($"> [{activePort.PortName}] {cmd}{Environment.NewLine}");
             activePort.Write(cmd + "\r\n");
-
             textBox2.Clear();
         }
-        
 
         // ==============================
         // RECEIVE DATA (9600)
@@ -476,13 +562,11 @@ namespace CPU_Interface
 
                 BeginInvoke(new Action(() =>
                 {
-                    // Always show raw RX (even if it's not FLF or fault text)
                     string ascii = Encoding.ASCII.GetString(buffer);
                     textBox1.AppendText(ascii);
 
                     rxBuffer.Append(ascii);
 
-                    // Only parse into lines if we have terminators
                     while (true)
                     {
                         int idx = rxBuffer.ToString().IndexOfAny(new[] { '\r', '\n' });
@@ -497,9 +581,8 @@ namespace CPU_Interface
                         }
                     }
 
-                    // Update decoded faults (safe even if none exist)
                     UpdateCodeDescriptions();
-
+                    UpdateStatusBar();
                     textBox1.ScrollToCaret();
                 }));
             }
@@ -507,7 +590,7 @@ namespace CPU_Interface
             {
                 BeginInvoke(new Action(() =>
                 {
-                    textBox1.AppendText($"[SERIAL RX ERROR] {ex.Message}\r\n");
+                    textBox1.AppendText($"[RX ERROR] {ex.Message}{Environment.NewLine}");
                 }));
             }
         }
@@ -537,15 +620,71 @@ namespace CPU_Interface
                 }
 
                 UpdateCodeDescriptions();
+                UpdateStatusBar();
                 textBox1.ScrollToCaret();
             }));
         }
 
         // ==============================
-        // EXTRACT KEY FOR LOOKUP
-        // Supports: "FLF:3", "LOG ... FLF:3", and "011:NO MAINS SYNC.MDU ..."
+        // PARSE DETECTION FLAGS (F, O, N, S, -)
+        // Format: DET. NAME XXXXX where X is F/O/N/S/-
+        // F = Fault, O = Open, N = Normal, S = Stuck/Override
         // ==============================
-        private static string ExtractCodeKey(string line)
+        private string? ParseDetectorFlags(string line)
+        {
+            var match = DetectorFlagRegex.Match(line);
+            if (!match.Success) return null;
+
+            string detectorName = match.Groups[1].Value;
+            string flags = match.Groups[2].Value.ToUpper();
+
+            var statusList = new List<string>();
+            var flagDescriptions = new Dictionary<char, (string name, string color)>
+            {
+                { 'F', ("FAULT", "RED") },
+                { 'O', ("OPEN", "YELLOW") },
+                { 'N', ("NORMAL", "GREEN") },
+                { 'S', ("STUCK/OVERRIDE", "ORANGE") }
+            };
+
+            for (int i = 0; i < flags.Length && i < 5; i++)
+            {
+                char flag = flags[i];
+                if (flagDescriptions.TryGetValue(flag, out var desc))
+                {
+                    statusList.Add($"[{desc.name}]");
+                }
+            }
+
+            if (statusList.Count == 0)
+                return null;
+
+            string statusStr = string.Join(" ", statusList);
+            string explanation = GetDetectorExplanation(flags);
+
+            return $"DETECTOR: {detectorName}\n" +
+                   $"  Flags: {flags}\n" +
+                   $"  Status: {statusStr}\n" +
+                   $"  {explanation}";
+        }
+
+        private string GetDetectorExplanation(string flags)
+        {
+            if (flags.Contains('F'))
+                return "Detector FAULT - Check loop/card/wiring. Loop may be shorted.";
+            if (flags.Contains('O'))
+                return "Detector OPEN - Loop circuit open. Check connections/cable.";
+            if (flags.Contains('S'))
+                return "Detector STUCK/OVERRIDE - Manual override or stuck detection.";
+            if (flags.Contains('N'))
+                return "Detector NORMAL - Operating correctly.";
+            return "Unknown detector state.";
+        }
+
+        // ==============================
+        // EXTRACT KEY FOR LOOKUP
+        // ==============================
+        private string ExtractCodeKey(string line)
         {
             if (string.IsNullOrWhiteSpace(line)) return "UNKNOWN";
 
@@ -556,7 +695,19 @@ namespace CPU_Interface
             if (!string.IsNullOrEmpty(flfToken))
                 return flfToken.Trim().TrimEnd(',', ';');
 
-            // 2) Prefer numeric code tokens like 011:...
+            // 2) Check for OMS ERR pattern
+            if (line.Contains("OMS ERR"))
+            {
+                var omsMatch = Regex.Match(line, @"OMS ERR G\d{2}\s*\(\d\)");
+                if (omsMatch.Success)
+                    return omsMatch.Value;
+            }
+
+            // 3) Check for SWOF XP pattern
+            if (line.Contains("SWOF XP"))
+                return "SWOF XP";
+
+            // 4) Prefer numeric code tokens like 011:...
             var numToken = Array.Find(tokens, t =>
                 t.Length >= 4 &&
                 char.IsDigit(t[0]) && char.IsDigit(t[1]) && char.IsDigit(t[2]) &&
@@ -564,35 +715,35 @@ namespace CPU_Interface
 
             if (!string.IsNullOrEmpty(numToken))
             {
-                // Some outputs split like "011:NO" "MAINS" "SYNC.MDU"
-                // We'll attempt to rebuild to match your dictionary keys:
-                // Take tokens from this numeric token onward until we hit something that looks like a timestamp or bracket.
                 int start = Array.IndexOf(tokens, numToken);
                 var sb = new StringBuilder(tokens[start].Trim().TrimEnd(',', ';'));
                 for (int i = start + 1; i < tokens.Length; i++)
                 {
                     string t = tokens[i];
-
-                    // stop if it looks like decoration
                     if (t.StartsWith("[") || t.StartsWith("(")) break;
-
                     sb.Append(' ').Append(t);
                 }
                 return sb.ToString().Trim();
             }
 
-            // 3) Known textual prefixes
+            // 5) Known textual prefixes
             string[] knownPrefixes = { "LCM-", "IO1616-", "MP-", "IOTU-", "MTS4BP-" };
             foreach (var t in tokens)
             {
                 foreach (var p in knownPrefixes)
                 {
                     if (t.StartsWith(p, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Include ERR suffix if present
+                        int idx = Array.IndexOf(tokens, t);
+                        if (idx < tokens.Length - 1 && tokens[idx + 1].Equals("ERR", StringComparison.OrdinalIgnoreCase))
+                            return t.Trim() + " ERR";
                         return t.Trim().TrimEnd(',', ';');
+                    }
                 }
             }
 
-            // 4) Fallback - whole line
+            // 6) Fallback - whole line
             return tokens.Length == 1 ? tokens[0].Trim() : line.Trim();
         }
 
@@ -601,38 +752,51 @@ namespace CPU_Interface
         // ==============================
         private void UpdateCodeDescriptions()
         {
-
             var criticalCodes = new HashSet<string>
-    {
-        "000:NO LAMP POWER.MDU",
-        "006:CPU-B LCM DIAG (F)",
-        "208:LAMP AUTOSET ERR",
-        "255:FATAL ALARM",
-        "LCM-1-255 ERR",
-        "IO1616-1 ERR",
-        "IO1616-2 ERR",
-        "MP-1 ERR",
-        "FLF:2",
-        "FLF:3",
-        "FLF:4",
-        "FLF:5"
-    };
+            {
+                "000:NO LAMP POWER.MDU",
+                "006:CPU-B LCM DIAG (F)",
+                "208:LAMP AUTOSET ERR",
+                "255:FATAL ALARM",
+                "LCM-1-255 ERR",
+                "IO1616-1 ERR",
+                "IO1616-2 ERR",
+                "MP-1 ERR",
+                "FLF:2",
+                "FLF:3",
+                "FLF:4",
+                "FLF:5"
+            };
 
-            // Use a StringBuilder to reduce UI redraws
             var sb = new StringBuilder();
 
             foreach (string line in allReceivedLines)
             {
-                string codeKey = ExtractCodeKey(line);
+                // First check for detector flags (DET. NAME FLAGS)
+                string? detectorParsed = ParseDetectorFlags(line);
+                if (detectorParsed != null)
+                {
+                    // Check if it's a fault condition
+                    bool isFault = line.Contains("F") && !line.Contains("F----".Replace("F", "-"));
+                    string prefix = isFault ? "[DETECTOR FAULT] " : "";
+                    sb.AppendLine($"{prefix}{detectorParsed}");
+                    sb.AppendLine();
+                    continue;
+                }
 
+                // Otherwise use standard code lookup
+                string codeKey = ExtractCodeKey(line);
                 string matchedDesc;
+
                 if (cpuMessages.TryGetValue(codeKey, out var descExact))
                 {
                     matchedDesc = descExact;
                 }
                 else
                 {
-                    if (codeKey.Length > 4 && char.IsDigit(codeKey[0]) && char.IsDigit(codeKey[1]) && char.IsDigit(codeKey[2]) && codeKey[3] == ':')
+                    // Try partial matching for numeric codes
+                    if (codeKey.Length > 4 && char.IsDigit(codeKey[0]) && char.IsDigit(codeKey[1]) &&
+                        char.IsDigit(codeKey[2]) && codeKey[3] == ':')
                     {
                         var toks = codeKey.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                         if (toks.Length >= 3)
@@ -654,17 +818,16 @@ namespace CPU_Interface
                     }
                 }
 
-                string displayLine = $"{codeKey}: {matchedDesc}{Environment.NewLine}{Environment.NewLine}";
+                string displayLine = $"{codeKey}: {matchedDesc}";
                 if (criticalCodes.Contains(codeKey))
                     displayLine = "[CRITICAL] " + displayLine;
 
-                sb.Append(displayLine);
+                sb.AppendLine(displayLine);
+                sb.AppendLine();
             }
 
-            // Assign text once to avoid repeated redraw
             textBox3.Text = sb.ToString();
 
-            // Scroll to caret once at the end
             if (textBox3.Text.Length > 0)
             {
                 textBox3.SelectionStart = textBox3.Text.Length;
@@ -679,8 +842,8 @@ namespace CPU_Interface
         {
             try
             {
-                if (serialPort1.IsOpen) serialPort1.Close();
-                if (serialPort2.IsOpen) serialPort2.Close();
+                if (serialPort1 != null && serialPort1.IsOpen) serialPort1.Close();
+                if (serialPort2 != null && serialPort2.IsOpen) serialPort2.Close();
             }
             catch
             {
