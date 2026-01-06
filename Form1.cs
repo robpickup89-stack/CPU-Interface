@@ -296,7 +296,9 @@ namespace CPU_Interface
             };
             serialPort1.DataReceived += SerialPort1_DataReceived;
 
-            // SERIAL PORT 2 (1200)
+            // SERIAL PORT 2 (1200) - Siemens
+            // Settings: 1200 baud, 7 data bits, Even parity, 1 stop bit, No flow control
+            // DTR enabled for proper handshaking with Siemens controllers
             serialPort2 = new SerialPort
             {
                 BaudRate = 1200,
@@ -304,7 +306,9 @@ namespace CPU_Interface
                 Parity = Parity.Even,
                 StopBits = StopBits.One,
                 Handshake = Handshake.None,
-                Encoding = Encoding.ASCII
+                Encoding = Encoding.ASCII,
+                DtrEnable = true,
+                RtsEnable = true
             };
             serialPort2.DataReceived += SerialPort2_DataReceived;
 
@@ -403,8 +407,8 @@ namespace CPU_Interface
                     serialPort1.Open();
 
                     button1.Text = "DISCONNECT";
-                    button1.BackColor = Color.FromArgb(60, 140, 60);
-                    button1.FlatAppearance.BorderColor = Color.FromArgb(80, 160, 80);
+                    button1.BackColor = Color.FromArgb(144, 238, 144);
+                    button1.ForeColor = SystemColors.ControlText;
 
                     textBox1.AppendText($"[CONNECTED] PTC1 @ 9600 baud on {serialPort1.PortName}{Environment.NewLine}");
                     UpdateStatusBar();
@@ -413,8 +417,8 @@ namespace CPU_Interface
                 {
                     serialPort1.Close();
                     button1.Text = "PTC1 (9600)";
-                    button1.BackColor = Color.FromArgb(60, 60, 65);
-                    button1.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
+                    button1.BackColor = SystemColors.Control;
+                    button1.ForeColor = SystemColors.ControlText;
 
                     textBox1.AppendText($"[DISCONNECTED] PTC1{Environment.NewLine}");
                     UpdateStatusBar();
@@ -455,8 +459,8 @@ namespace CPU_Interface
                     serialPort2.Open();
 
                     button2.Text = "DISCONNECT";
-                    button2.BackColor = Color.FromArgb(60, 100, 140);
-                    button2.FlatAppearance.BorderColor = Color.FromArgb(80, 120, 160);
+                    button2.BackColor = Color.FromArgb(135, 206, 250);
+                    button2.ForeColor = SystemColors.ControlText;
 
                     textBox1.AppendText($"[CONNECTED] Siemens @ 1200 baud on {serialPort2.PortName}{Environment.NewLine}");
                     UpdateStatusBar();
@@ -465,8 +469,8 @@ namespace CPU_Interface
                 {
                     serialPort2.Close();
                     button2.Text = "Siemens (1200)";
-                    button2.BackColor = Color.FromArgb(60, 60, 65);
-                    button2.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
+                    button2.BackColor = SystemColors.Control;
+                    button2.ForeColor = SystemColors.ControlText;
 
                     textBox1.AppendText($"[DISCONNECTED] Siemens{Environment.NewLine}");
                     UpdateStatusBar();
