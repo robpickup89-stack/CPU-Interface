@@ -36,6 +36,7 @@ namespace CPU_Interface
             textBox2 = new TextBox();
             labelCommand = new Label();
             btnClear = new Button();
+            btnSend = new Button();
             btnFullscreen = new Button();
             panelSiemensOptions = new Panel();
             chkFfsAutoScroll = new CheckBox();
@@ -116,7 +117,7 @@ namespace CPU_Interface
             panelConnection.Controls.Add(comboBoxPTC1);
             panelConnection.Controls.Add(button1);
             panelConnection.Controls.Add(button2);
-            panelConnection.Location = new Point(8, 8);
+            panelConnection.Location = new Point(868, 8);
             panelConnection.Size = new Size(450, 74);
             panelConnection.Name = "panelConnection";
             panelConnection.Padding = new Padding(10);
@@ -170,9 +171,10 @@ namespace CPU_Interface
             panelCommand.BackColor = SystemColors.ControlLight;
             panelCommand.Controls.Add(labelCommand);
             panelCommand.Controls.Add(textBox2);
+            panelCommand.Controls.Add(btnSend);
             panelCommand.Controls.Add(btnClear);
-            panelCommand.Location = new Point(468, 8);
-            panelCommand.Size = new Size(400, 74);
+            panelCommand.Location = new Point(8, 8);
+            panelCommand.Size = new Size(470, 74);
             panelCommand.Name = "panelCommand";
             panelCommand.Padding = new Padding(10);
             panelCommand.Anchor = AnchorStyles.Top | AnchorStyles.Left;
@@ -193,14 +195,25 @@ namespace CPU_Interface
             textBox2.ForeColor = SystemColors.WindowText;
             textBox2.Location = new Point(12, 35);
             textBox2.Name = "textBox2";
-            textBox2.Size = new Size(280, 28);
+            textBox2.Size = new Size(250, 28);
             textBox2.TabIndex = 3;
+
+            // Button: Send
+            btnSend.BackColor = Color.FromArgb(192, 255, 192);
+            btnSend.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnSend.ForeColor = SystemColors.ControlText;
+            btnSend.Location = new Point(270, 32);
+            btnSend.Name = "btnSend";
+            btnSend.Size = new Size(85, 32);
+            btnSend.Text = "SEND";
+            btnSend.UseVisualStyleBackColor = false;
+            btnSend.Click += btnSend_Click;
 
             // Button: Clear
             btnClear.BackColor = Color.FromArgb(255, 192, 192);
             btnClear.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             btnClear.ForeColor = SystemColors.ControlText;
-            btnClear.Location = new Point(300, 32);
+            btnClear.Location = new Point(362, 32);
             btnClear.Name = "btnClear";
             btnClear.Size = new Size(85, 32);
             btnClear.Text = "CLEAR";
@@ -226,7 +239,7 @@ namespace CPU_Interface
             panelSiemensOptions.Controls.Add(labelSiemensOptions);
             panelSiemensOptions.Controls.Add(chkFfsAutoScroll);
             panelSiemensOptions.Controls.Add(chkFlfAutoScroll);
-            panelSiemensOptions.Location = new Point(878, 8);
+            panelSiemensOptions.Location = new Point(488, 8);
             panelSiemensOptions.Size = new Size(190, 74);
             panelSiemensOptions.Name = "panelSiemensOptions";
             panelSiemensOptions.Padding = new Padding(10);
@@ -285,9 +298,9 @@ namespace CPU_Interface
             // Label: Raw Data
             labelRawData.AutoSize = true;
             labelRawData.BackColor = SystemColors.ControlLight;
+            labelRawData.Dock = DockStyle.Top;
             labelRawData.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             labelRawData.ForeColor = Color.FromArgb(0, 128, 64);
-            labelRawData.Location = new Point(10, 8);
             labelRawData.Name = "labelRawData";
             labelRawData.Text = "RAW SERIAL DATA";
 
@@ -295,14 +308,13 @@ namespace CPU_Interface
             textBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             textBox1.BackColor = SystemColors.Window;
             textBox1.BorderStyle = BorderStyle.FixedSingle;
+            textBox1.Dock = DockStyle.Fill;
             textBox1.Font = new Font("Consolas", 9.75F, FontStyle.Bold);
             textBox1.ForeColor = SystemColors.WindowText;
-            textBox1.Location = new Point(8, 32);
             textBox1.Multiline = true;
             textBox1.Name = "textBox1";
             textBox1.ReadOnly = true;
             textBox1.ScrollBars = ScrollBars.Both;
-            textBox1.Size = new Size(350, 600);
             textBox1.TabIndex = 0;
             textBox1.WordWrap = false;
 
@@ -333,9 +345,9 @@ namespace CPU_Interface
             // Label: Decoded
             labelDecoded.AutoSize = true;
             labelDecoded.BackColor = SystemColors.ControlLight;
+            labelDecoded.Dock = DockStyle.Top;
             labelDecoded.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             labelDecoded.ForeColor = Color.FromArgb(192, 64, 0);
-            labelDecoded.Location = new Point(10, 8);
             labelDecoded.Name = "labelDecoded";
             labelDecoded.Text = "DECODED FAULTS & DETECTORS";
 
@@ -343,14 +355,13 @@ namespace CPU_Interface
             textBox3.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             textBox3.BackColor = SystemColors.Window;
             textBox3.BorderStyle = BorderStyle.FixedSingle;
+            textBox3.Dock = DockStyle.Fill;
             textBox3.Font = new Font("Consolas", 9.75F, FontStyle.Bold);
             textBox3.ForeColor = SystemColors.WindowText;
-            textBox3.Location = new Point(8, 32);
             textBox3.Multiline = true;
             textBox3.Name = "textBox3";
             textBox3.ReadOnly = true;
             textBox3.ScrollBars = ScrollBars.Both;
-            textBox3.Size = new Size(484, 600);
             textBox3.TabIndex = 4;
             textBox3.WordWrap = false;
 
@@ -457,6 +468,7 @@ namespace CPU_Interface
         private TextBox textBox2;
         private Label labelCommand;
         private Button btnClear;
+        private Button btnSend;
         private Button btnFullscreen;
         private CheckBox chkFfsAutoScroll;
         private CheckBox chkFlfAutoScroll;
