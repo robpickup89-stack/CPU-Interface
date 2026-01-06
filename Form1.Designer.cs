@@ -17,6 +17,7 @@ namespace CPU_Interface
 
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             components = new System.ComponentModel.Container();
 
             // Main panels and containers
@@ -42,6 +43,9 @@ namespace CPU_Interface
             labelRawData = new Label();
             textBox1 = new TextBox();
 
+            // Center panel (image)
+            pictureBox1 = new PictureBox();
+
             // Right panel (decoded output)
             panelRight = new Panel();
             labelDecoded = new Label();
@@ -64,6 +68,7 @@ namespace CPU_Interface
             panelCommand.SuspendLayout();
             panelLeft.SuspendLayout();
             panelRight.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             statusStrip.SuspendLayout();
             SuspendLayout();
 
@@ -84,11 +89,12 @@ namespace CPU_Interface
             mainTableLayout.Margin = new Padding(0);
             mainTableLayout.Name = "mainTableLayout";
             mainTableLayout.Padding = new Padding(4);
+            mainTableLayout.BackColor = SystemColors.Control;
 
             // ========================================
             // TOP PANEL
             // ========================================
-            topPanel.BackColor = Color.FromArgb(45, 45, 48);
+            topPanel.BackColor = SystemColors.Control;
             topPanel.Controls.Add(panelConnection);
             topPanel.Controls.Add(panelCommand);
             topPanel.Controls.Add(btnFullscreen);
@@ -99,7 +105,7 @@ namespace CPU_Interface
             // ========================================
             // CONNECTION PANEL
             // ========================================
-            panelConnection.BackColor = Color.FromArgb(37, 37, 38);
+            panelConnection.BackColor = SystemColors.ControlLight;
             panelConnection.Controls.Add(labelComPort);
             panelConnection.Controls.Add(comboBoxPTC1);
             panelConnection.Controls.Add(button1);
@@ -108,19 +114,19 @@ namespace CPU_Interface
             panelConnection.Size = new Size(450, 74);
             panelConnection.Name = "panelConnection";
             panelConnection.Padding = new Padding(10);
+            panelConnection.BorderStyle = BorderStyle.FixedSingle;
 
             // Label: COM Port
             labelComPort.AutoSize = true;
             labelComPort.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            labelComPort.ForeColor = Color.FromArgb(200, 200, 200);
+            labelComPort.ForeColor = SystemColors.ControlText;
             labelComPort.Location = new Point(12, 12);
             labelComPort.Name = "labelComPort";
             labelComPort.Text = "COM PORT";
 
             // ComboBox: COM Port selector
-            comboBoxPTC1.BackColor = Color.FromArgb(60, 60, 65);
-            comboBoxPTC1.ForeColor = Color.White;
-            comboBoxPTC1.FlatStyle = FlatStyle.Flat;
+            comboBoxPTC1.BackColor = SystemColors.Window;
+            comboBoxPTC1.ForeColor = SystemColors.WindowText;
             comboBoxPTC1.Font = new Font("Segoe UI", 10F);
             comboBoxPTC1.FormattingEnabled = true;
             comboBoxPTC1.Location = new Point(12, 35);
@@ -129,39 +135,33 @@ namespace CPU_Interface
             comboBoxPTC1.DropDownStyle = ComboBoxStyle.DropDownList;
 
             // Button: PTC1 (9600 baud)
-            button1.BackColor = Color.FromArgb(60, 60, 65);
-            button1.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
-            button1.FlatAppearance.MouseOverBackColor = Color.FromArgb(80, 80, 85);
-            button1.FlatStyle = FlatStyle.Flat;
+            button1.BackColor = SystemColors.Control;
             button1.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            button1.ForeColor = Color.White;
+            button1.ForeColor = SystemColors.ControlText;
             button1.Location = new Point(125, 25);
             button1.Name = "button1";
             button1.Size = new Size(150, 40);
             button1.TabIndex = 1;
             button1.Text = "PTC1 (9600)";
-            button1.UseVisualStyleBackColor = false;
+            button1.UseVisualStyleBackColor = true;
             button1.Click += button1_Click;
 
             // Button: Siemens (1200 baud)
-            button2.BackColor = Color.FromArgb(60, 60, 65);
-            button2.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
-            button2.FlatAppearance.MouseOverBackColor = Color.FromArgb(80, 80, 85);
-            button2.FlatStyle = FlatStyle.Flat;
+            button2.BackColor = SystemColors.Control;
             button2.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            button2.ForeColor = Color.White;
+            button2.ForeColor = SystemColors.ControlText;
             button2.Location = new Point(285, 25);
             button2.Name = "button2";
             button2.Size = new Size(150, 40);
             button2.TabIndex = 2;
             button2.Text = "Siemens (1200)";
-            button2.UseVisualStyleBackColor = false;
+            button2.UseVisualStyleBackColor = true;
             button2.Click += button2_Click;
 
             // ========================================
             // COMMAND PANEL
             // ========================================
-            panelCommand.BackColor = Color.FromArgb(37, 37, 38);
+            panelCommand.BackColor = SystemColors.ControlLight;
             panelCommand.Controls.Add(labelCommand);
             panelCommand.Controls.Add(textBox2);
             panelCommand.Controls.Add(btnClear);
@@ -170,31 +170,30 @@ namespace CPU_Interface
             panelCommand.Name = "panelCommand";
             panelCommand.Padding = new Padding(10);
             panelCommand.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            panelCommand.BorderStyle = BorderStyle.FixedSingle;
 
             // Label: Command
             labelCommand.AutoSize = true;
             labelCommand.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            labelCommand.ForeColor = Color.FromArgb(200, 200, 200);
+            labelCommand.ForeColor = SystemColors.ControlText;
             labelCommand.Location = new Point(12, 12);
             labelCommand.Name = "labelCommand";
             labelCommand.Text = "COMMAND INPUT";
 
             // TextBox: Command input
-            textBox2.BackColor = Color.FromArgb(30, 30, 30);
+            textBox2.BackColor = SystemColors.Window;
             textBox2.BorderStyle = BorderStyle.FixedSingle;
             textBox2.Font = new Font("Consolas", 11F);
-            textBox2.ForeColor = Color.FromArgb(86, 156, 214);
+            textBox2.ForeColor = SystemColors.WindowText;
             textBox2.Location = new Point(12, 35);
             textBox2.Name = "textBox2";
             textBox2.Size = new Size(280, 28);
             textBox2.TabIndex = 3;
 
             // Button: Clear
-            btnClear.BackColor = Color.FromArgb(100, 60, 60);
-            btnClear.FlatAppearance.BorderColor = Color.FromArgb(120, 80, 80);
-            btnClear.FlatStyle = FlatStyle.Flat;
+            btnClear.BackColor = Color.FromArgb(255, 192, 192);
             btnClear.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            btnClear.ForeColor = Color.White;
+            btnClear.ForeColor = SystemColors.ControlText;
             btnClear.Location = new Point(300, 32);
             btnClear.Name = "btnClear";
             btnClear.Size = new Size(85, 32);
@@ -203,36 +202,35 @@ namespace CPU_Interface
             btnClear.Click += btnClear_Click;
 
             // Button: Fullscreen toggle
-            btnFullscreen.BackColor = Color.FromArgb(60, 60, 65);
-            btnFullscreen.FlatAppearance.BorderColor = Color.FromArgb(100, 100, 100);
-            btnFullscreen.FlatStyle = FlatStyle.Flat;
+            btnFullscreen.BackColor = SystemColors.Control;
             btnFullscreen.Font = new Font("Segoe UI", 9F);
-            btnFullscreen.ForeColor = Color.White;
+            btnFullscreen.ForeColor = SystemColors.ControlText;
             btnFullscreen.Location = new Point(878, 32);
             btnFullscreen.Name = "btnFullscreen";
             btnFullscreen.Size = new Size(100, 32);
             btnFullscreen.Text = "Fullscreen";
             btnFullscreen.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnFullscreen.UseVisualStyleBackColor = false;
+            btnFullscreen.UseVisualStyleBackColor = true;
             btnFullscreen.Click += btnFullscreen_Click;
 
             // ========================================
             // MAIN SPLIT CONTAINER
             // ========================================
-            mainSplitContainer.BackColor = Color.FromArgb(45, 45, 48);
+            mainSplitContainer.BackColor = SystemColors.Control;
             mainSplitContainer.Dock = DockStyle.Fill;
             mainSplitContainer.Name = "mainSplitContainer";
             mainSplitContainer.SplitterDistance = 500;
             mainSplitContainer.SplitterWidth = 6;
-            mainSplitContainer.Panel1.BackColor = Color.FromArgb(30, 30, 30);
-            mainSplitContainer.Panel2.BackColor = Color.FromArgb(30, 30, 30);
+            mainSplitContainer.Panel1.BackColor = SystemColors.ControlLight;
+            mainSplitContainer.Panel2.BackColor = SystemColors.ControlLight;
 
             // ========================================
             // LEFT PANEL (Raw Data)
             // ========================================
             mainSplitContainer.Panel1.Controls.Add(panelLeft);
+            mainSplitContainer.Panel1.Controls.Add(pictureBox1);
 
-            panelLeft.BackColor = Color.FromArgb(30, 30, 30);
+            panelLeft.BackColor = SystemColors.ControlLight;
             panelLeft.Controls.Add(labelRawData);
             panelLeft.Controls.Add(textBox1);
             panelLeft.Dock = DockStyle.Fill;
@@ -241,34 +239,46 @@ namespace CPU_Interface
 
             // Label: Raw Data
             labelRawData.AutoSize = true;
-            labelRawData.BackColor = Color.FromArgb(30, 30, 30);
+            labelRawData.BackColor = SystemColors.ControlLight;
             labelRawData.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            labelRawData.ForeColor = Color.FromArgb(78, 201, 176);
+            labelRawData.ForeColor = Color.FromArgb(0, 128, 64);
             labelRawData.Location = new Point(10, 8);
             labelRawData.Name = "labelRawData";
             labelRawData.Text = "RAW SERIAL DATA";
 
             // TextBox: Raw data display
             textBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            textBox1.BackColor = Color.FromArgb(20, 20, 20);
-            textBox1.BorderStyle = BorderStyle.None;
-            textBox1.Font = new Font("Consolas", 10F);
-            textBox1.ForeColor = Color.FromArgb(220, 220, 220);
+            textBox1.BackColor = SystemColors.Window;
+            textBox1.BorderStyle = BorderStyle.FixedSingle;
+            textBox1.Font = new Font("Consolas", 9.75F, FontStyle.Bold);
+            textBox1.ForeColor = SystemColors.WindowText;
             textBox1.Location = new Point(8, 32);
             textBox1.Multiline = true;
             textBox1.Name = "textBox1";
             textBox1.ReadOnly = true;
             textBox1.ScrollBars = ScrollBars.Both;
-            textBox1.Size = new Size(484, 600);
+            textBox1.Size = new Size(350, 600);
             textBox1.TabIndex = 0;
             textBox1.WordWrap = false;
+
+            // ========================================
+            // PICTURE BOX (Center Image)
+            // ========================================
+            pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
+            pictureBox1.Location = new Point(365, 100);
+            pictureBox1.Name = "pictureBox1";
+            pictureBox1.Size = new Size(130, 400);
+            pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
+            pictureBox1.TabIndex = 8;
+            pictureBox1.TabStop = false;
+            pictureBox1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
 
             // ========================================
             // RIGHT PANEL (Decoded Output)
             // ========================================
             mainSplitContainer.Panel2.Controls.Add(panelRight);
 
-            panelRight.BackColor = Color.FromArgb(30, 30, 30);
+            panelRight.BackColor = SystemColors.ControlLight;
             panelRight.Controls.Add(labelDecoded);
             panelRight.Controls.Add(textBox3);
             panelRight.Dock = DockStyle.Fill;
@@ -277,19 +287,19 @@ namespace CPU_Interface
 
             // Label: Decoded
             labelDecoded.AutoSize = true;
-            labelDecoded.BackColor = Color.FromArgb(30, 30, 30);
+            labelDecoded.BackColor = SystemColors.ControlLight;
             labelDecoded.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            labelDecoded.ForeColor = Color.FromArgb(206, 145, 120);
+            labelDecoded.ForeColor = Color.FromArgb(192, 64, 0);
             labelDecoded.Location = new Point(10, 8);
             labelDecoded.Name = "labelDecoded";
             labelDecoded.Text = "DECODED FAULTS & DETECTORS";
 
             // TextBox: Decoded display
             textBox3.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            textBox3.BackColor = Color.FromArgb(20, 20, 20);
-            textBox3.BorderStyle = BorderStyle.None;
-            textBox3.Font = new Font("Consolas", 10F);
-            textBox3.ForeColor = Color.FromArgb(220, 220, 220);
+            textBox3.BackColor = SystemColors.Window;
+            textBox3.BorderStyle = BorderStyle.FixedSingle;
+            textBox3.Font = new Font("Consolas", 9.75F, FontStyle.Bold);
+            textBox3.ForeColor = SystemColors.WindowText;
             textBox3.Location = new Point(8, 32);
             textBox3.Multiline = true;
             textBox3.Name = "textBox3";
@@ -349,7 +359,7 @@ namespace CPU_Interface
             // ========================================
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            BackColor = Color.FromArgb(30, 30, 30);
+            BackColor = SystemColors.Control;
             ClientSize = new Size(1400, 850);
             Controls.Add(mainTableLayout);
             DoubleBuffered = true;
@@ -375,6 +385,7 @@ namespace CPU_Interface
             panelLeft.PerformLayout();
             panelRight.ResumeLayout(false);
             panelRight.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             statusStrip.ResumeLayout(false);
             statusStrip.PerformLayout();
             ResumeLayout(false);
@@ -404,6 +415,9 @@ namespace CPU_Interface
         private Panel panelLeft;
         private Label labelRawData;
         private TextBox textBox1;
+
+        // Center image
+        private PictureBox pictureBox1;
 
         // Right panel (decoded)
         private Panel panelRight;
