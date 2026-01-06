@@ -601,8 +601,8 @@ namespace CPU_Interface
                     flfMode = false;
                     ffsTimer?.Stop();
                     siemensInitActive = false;
-                    seenFlfEntries.Clear();
-                    lastFlfEntry = null;
+                    flfStartEntry = null;
+                    flfEntryCount = 0;
 
                     textBox1.AppendText($"[DISCONNECTED] Siemens{Environment.NewLine}");
                     UpdateStatusBar();
