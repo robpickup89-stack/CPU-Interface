@@ -725,6 +725,9 @@ namespace CPU_Interface
 
                     UpdateCodeDescriptions();
                     UpdateStatusBar();
+
+                    // Auto-scroll to end of raw data
+                    textBox1.SelectionStart = textBox1.Text.Length;
                     textBox1.ScrollToCaret();
                 }));
             }
@@ -822,6 +825,9 @@ namespace CPU_Interface
 
                 UpdateCodeDescriptions();
                 UpdateStatusBar();
+
+                // Auto-scroll to end of raw data
+                textBox1.SelectionStart = textBox1.Text.Length;
                 textBox1.ScrollToCaret();
             }));
         }
@@ -1001,7 +1007,6 @@ namespace CPU_Interface
                     bool isFault = line.Contains("F") && !line.Contains("F----".Replace("F", "-"));
                     string prefix = isFault ? "[DETECTOR FAULT] " : "";
                     sb.AppendLine($"{prefix}{detectorParsed}");
-                    sb.AppendLine();
                     continue;
                 }
 
@@ -1044,7 +1049,6 @@ namespace CPU_Interface
                     displayLine = "[CRITICAL] " + displayLine;
 
                 sb.AppendLine(displayLine);
-                sb.AppendLine();
             }
 
             textBox3.Text = sb.ToString();
