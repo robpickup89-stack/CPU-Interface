@@ -19,7 +19,15 @@ namespace CPU_Interface
 
         // FFS (Fault log) mode state
         private bool ffsMode = false;
+        private bool flfMode = false;
         private System.Windows.Forms.Timer? ffsTimer;
+        private HashSet<string> seenFlfEntries = new HashSet<string>();
+        private string? lastFlfEntry = null;
+
+        // Siemens init sequence state
+        private bool siemensInitActive = false;
+        private int siemensInitCount = 0;
+        private const int MaxSiemensInitCommands = 10;
 
         // Fullscreen state
         private bool isFullscreen = false;
@@ -329,6 +337,15 @@ namespace CPU_Interface
             ffsTimer = new System.Windows.Forms.Timer();
             ffsTimer.Interval = 500; // 500ms delay between "+" sends
             ffsTimer.Tick += FfsTimer_Tick;
+
+            // Set 50/50 split on load
+            Load += Form1_Load;
+        }
+
+        private void Form1_Load(object? sender, EventArgs e)
+        {
+            // Set splitter to 50% of container width for equal split
+            mainSplitContainer.SplitterDistance = mainSplitContainer.Width / 2;
         }
 
         // ==============================
@@ -345,6 +362,17 @@ namespace CPU_Interface
             {
                 ToggleFullscreen();
                 e.Handled = true;
+            }
+            // Shift++ sends "+" command when connected to Siemens
+            else if (e.Shift && (e.KeyCode == Keys.Oemplus || e.KeyCode == Keys.Add))
+            {
+                if (serialPort2 != null && serialPort2.IsOpen)
+                {
+                    serialPort2.Write("+\r\n");
+                    textBox1.AppendText($"> [{serialPort2.PortName}] +{Environment.NewLine}");
+                    e.Handled = true;
+                    e.SuppressKeyPress = true;
+                }
             }
         }
 
@@ -382,11 +410,24 @@ namespace CPU_Interface
         }
 
         // ==============================
-        // FFS TIMER (Auto-send "+" for fault log)
+        // FFS/FLF TIMER (Auto-send "+" for fault log)
         // ==============================
         private void FfsTimer_Tick(object? sender, EventArgs e)
         {
-            if (ffsMode && serialPort2 != null && serialPort2.IsOpen)
+            bool shouldSend = false;
+
+            // Check if FFS auto-scroll is enabled and active
+            if (ffsMode && chkFfsAutoScroll != null && chkFfsAutoScroll.Checked)
+            {
+                shouldSend = true;
+            }
+            // Check if FLF auto-scroll is enabled and active
+            else if (flfMode && chkFlfAutoScroll != null && chkFlfAutoScroll.Checked)
+            {
+                shouldSend = true;
+            }
+
+            if (shouldSend && serialPort2 != null && serialPort2.IsOpen)
             {
                 serialPort2.Write("+\r\n");
                 textBox1.AppendText($"> [{serialPort2.PortName}] +{Environment.NewLine}");
@@ -401,20 +442,44 @@ namespace CPU_Interface
         {
             if (serialPort2 == null || !serialPort2.IsOpen) return;
 
+            siemensInitActive = true;
+            siemensInitCount = 0;
+
             // Send "f" characters to wake up the Siemens controller
-            // and get the "SIEMENS" response
-            for (int i = 0; i < 3; i++)
+            // Stop when: message received OR MaxSiemensInitCommands reached
+            while (siemensInitActive && siemensInitCount < MaxSiemensInitCommands)
             {
                 await System.Threading.Tasks.Task.Delay(300);
                 try
                 {
-                    if (serialPort2.IsOpen)
+                    if (serialPort2.IsOpen && siemensInitActive)
                     {
                         serialPort2.Write("f\r\n");
-                        textBox1.AppendText($"> [{serialPort2.PortName}] f (init){Environment.NewLine}");
+                        siemensInitCount++;
+                        textBox1.AppendText($"> [{serialPort2.PortName}] f (init {siemensInitCount}/{MaxSiemensInitCommands}){Environment.NewLine}");
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
                 catch { break; }
+            }
+
+            if (siemensInitCount >= MaxSiemensInitCommands && siemensInitActive)
+            {
+                textBox1.AppendText($"[INIT TIMEOUT] No response after {MaxSiemensInitCommands} attempts{Environment.NewLine}");
+            }
+            siemensInitActive = false;
+        }
+
+        // Stop init sequence when we receive a valid response
+        private void StopSiemensInit()
+        {
+            if (siemensInitActive)
+            {
+                siemensInitActive = false;
+                textBox1.AppendText($"[INIT COMPLETE] Response received{Environment.NewLine}");
             }
         }
 
@@ -428,7 +493,10 @@ namespace CPU_Interface
             allReceivedLines.Clear();
             rxBuffer.Clear();
             ffsMode = false;
+            flfMode = false;
             ffsTimer?.Stop();
+            seenFlfEntries.Clear();
+            lastFlfEntry = null;
             UpdateStatusBar();
         }
 
@@ -528,9 +596,13 @@ namespace CPU_Interface
                     button2.BackColor = SystemColors.Control;
                     button2.ForeColor = SystemColors.ControlText;
 
-                    // Reset FFS mode on disconnect
+                    // Reset FFS/FLF mode on disconnect
                     ffsMode = false;
+                    flfMode = false;
                     ffsTimer?.Stop();
+                    siemensInitActive = false;
+                    seenFlfEntries.Clear();
+                    lastFlfEntry = null;
 
                     textBox1.AppendText($"[DISCONNECTED] Siemens{Environment.NewLine}");
                     UpdateStatusBar();
@@ -643,7 +715,10 @@ namespace CPU_Interface
                         {
                             allReceivedLines.Add(line);
 
-                            // Handle FFS fault log mode
+                            // Stop init sequence when we receive any response
+                            StopSiemensInit();
+
+                            // Handle FFS/FLF fault log mode
                             HandleFfsResponse(line);
                         }
                     }
@@ -669,24 +744,52 @@ namespace CPU_Interface
         {
             string upperLine = line.ToUpper().Trim();
 
-            // Check for END OF LOG - stop auto-sending "+"
+            // Check for END OF LOG - stop FFS auto-sending "+"
             if (upperLine.Contains("END OF LOG"))
             {
                 ffsMode = false;
                 ffsTimer?.Stop();
-                textBox1.AppendText($"[FAULT LOG COMPLETE]{Environment.NewLine}");
+                textBox1.AppendText($"[FFS FAULT LOG COMPLETE]{Environment.NewLine}");
                 return;
             }
 
-            // Check for FFS or FLF fault entry - need to send "+" to continue
+            // Check for FFS fault entry - need to send "+" to continue until END OF LOG
             // FFS format: FFS 12:255 DFM-DSF
-            // FLF format: FLF 0:0
             bool isFfsEntry = upperLine.StartsWith("FFS") && !upperLine.Equals("FFS");
+
+            // Check for FLF fault entry - need to send "+" until we see a repeat
+            // FLF format: FLF 0:0
             bool isFlFEntry = upperLine.StartsWith("FLF") && upperLine.Contains(":");
 
-            if (isFfsEntry || isFlFEntry)
+            if (isFfsEntry)
             {
                 ffsMode = true;
+                flfMode = false;
+                // Start timer to send "+" after a short delay
+                ffsTimer?.Stop();
+                ffsTimer?.Start();
+            }
+            else if (isFlFEntry)
+            {
+                // Check for duplicate FLF entry - stop if repeating
+                string flfKey = upperLine;
+                if (seenFlfEntries.Contains(flfKey))
+                {
+                    // Repeating entry detected - stop auto-scroll
+                    flfMode = false;
+                    ffsTimer?.Stop();
+                    textBox1.AppendText($"[FLF LOG COMPLETE - Repeat detected]{Environment.NewLine}");
+                    seenFlfEntries.Clear();
+                    lastFlfEntry = null;
+                    return;
+                }
+
+                // New FLF entry - add to seen set and continue
+                seenFlfEntries.Add(flfKey);
+                lastFlfEntry = flfKey;
+                flfMode = true;
+                ffsMode = false;
+
                 // Start timer to send "+" after a short delay
                 ffsTimer?.Stop();
                 ffsTimer?.Start();

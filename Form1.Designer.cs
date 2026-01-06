@@ -37,6 +37,10 @@ namespace CPU_Interface
             labelCommand = new Label();
             btnClear = new Button();
             btnFullscreen = new Button();
+            panelSiemensOptions = new Panel();
+            chkFfsAutoScroll = new CheckBox();
+            chkFlfAutoScroll = new CheckBox();
+            labelSiemensOptions = new Label();
 
             // Left panel (raw data)
             panelLeft = new Panel();
@@ -66,6 +70,7 @@ namespace CPU_Interface
             mainSplitContainer.SuspendLayout();
             panelConnection.SuspendLayout();
             panelCommand.SuspendLayout();
+            panelSiemensOptions.SuspendLayout();
             panelLeft.SuspendLayout();
             panelRight.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
@@ -97,6 +102,7 @@ namespace CPU_Interface
             topPanel.BackColor = SystemColors.Control;
             topPanel.Controls.Add(panelConnection);
             topPanel.Controls.Add(panelCommand);
+            topPanel.Controls.Add(panelSiemensOptions);
             topPanel.Controls.Add(btnFullscreen);
             topPanel.Dock = DockStyle.Fill;
             topPanel.Name = "topPanel";
@@ -205,13 +211,52 @@ namespace CPU_Interface
             btnFullscreen.BackColor = SystemColors.Control;
             btnFullscreen.Font = new Font("Segoe UI", 9F);
             btnFullscreen.ForeColor = SystemColors.ControlText;
-            btnFullscreen.Location = new Point(878, 32);
+            btnFullscreen.Location = new Point(1078, 32);
             btnFullscreen.Name = "btnFullscreen";
             btnFullscreen.Size = new Size(100, 32);
             btnFullscreen.Text = "Fullscreen";
             btnFullscreen.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnFullscreen.UseVisualStyleBackColor = true;
             btnFullscreen.Click += btnFullscreen_Click;
+
+            // ========================================
+            // SIEMENS OPTIONS PANEL (Auto-scroll checkboxes)
+            // ========================================
+            panelSiemensOptions.BackColor = SystemColors.ControlLight;
+            panelSiemensOptions.Controls.Add(labelSiemensOptions);
+            panelSiemensOptions.Controls.Add(chkFfsAutoScroll);
+            panelSiemensOptions.Controls.Add(chkFlfAutoScroll);
+            panelSiemensOptions.Location = new Point(878, 8);
+            panelSiemensOptions.Size = new Size(190, 74);
+            panelSiemensOptions.Name = "panelSiemensOptions";
+            panelSiemensOptions.Padding = new Padding(10);
+            panelSiemensOptions.BorderStyle = BorderStyle.FixedSingle;
+
+            // Label: Siemens Options
+            labelSiemensOptions.AutoSize = true;
+            labelSiemensOptions.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            labelSiemensOptions.ForeColor = SystemColors.ControlText;
+            labelSiemensOptions.Location = new Point(12, 8);
+            labelSiemensOptions.Name = "labelSiemensOptions";
+            labelSiemensOptions.Text = "SIEMENS AUTO-SCROLL";
+
+            // Checkbox: FFS Auto-Scroll
+            chkFfsAutoScroll.AutoSize = true;
+            chkFfsAutoScroll.Font = new Font("Segoe UI", 9F);
+            chkFfsAutoScroll.ForeColor = SystemColors.ControlText;
+            chkFfsAutoScroll.Location = new Point(12, 30);
+            chkFfsAutoScroll.Name = "chkFfsAutoScroll";
+            chkFfsAutoScroll.Text = "FFS";
+            chkFfsAutoScroll.Checked = true;
+
+            // Checkbox: FLF Auto-Scroll
+            chkFlfAutoScroll.AutoSize = true;
+            chkFlfAutoScroll.Font = new Font("Segoe UI", 9F);
+            chkFlfAutoScroll.ForeColor = SystemColors.ControlText;
+            chkFlfAutoScroll.Location = new Point(12, 50);
+            chkFlfAutoScroll.Name = "chkFlfAutoScroll";
+            chkFlfAutoScroll.Text = "FLF";
+            chkFlfAutoScroll.Checked = true;
 
             // ========================================
             // MAIN SPLIT CONTAINER
@@ -381,6 +426,8 @@ namespace CPU_Interface
             panelConnection.PerformLayout();
             panelCommand.ResumeLayout(false);
             panelCommand.PerformLayout();
+            panelSiemensOptions.ResumeLayout(false);
+            panelSiemensOptions.PerformLayout();
             panelLeft.ResumeLayout(false);
             panelLeft.PerformLayout();
             panelRight.ResumeLayout(false);
@@ -402,6 +449,7 @@ namespace CPU_Interface
         // Top panel controls
         private Panel panelConnection;
         private Panel panelCommand;
+        private Panel panelSiemensOptions;
         private Button button1;
         private Button button2;
         private ComboBox comboBoxPTC1;
@@ -410,6 +458,9 @@ namespace CPU_Interface
         private Label labelCommand;
         private Button btnClear;
         private Button btnFullscreen;
+        private CheckBox chkFfsAutoScroll;
+        private CheckBox chkFlfAutoScroll;
+        private Label labelSiemensOptions;
 
         // Left panel (raw data)
         private Panel panelLeft;
