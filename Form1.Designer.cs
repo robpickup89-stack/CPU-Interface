@@ -280,7 +280,7 @@ namespace CPU_Interface
             panelLeft.Controls.Add(textBox1);
             panelLeft.Dock = DockStyle.Fill;
             panelLeft.Name = "panelLeft";
-            panelLeft.Padding = new Padding(8);
+            panelLeft.Padding = new Padding(8, 8, 160, 8);
 
             // Label: Raw Data
             labelRawData.AutoSize = true;

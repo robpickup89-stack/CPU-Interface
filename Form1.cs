@@ -21,8 +21,8 @@ namespace CPU_Interface
         private bool ffsMode = false;
         private bool flfMode = false;
         private System.Windows.Forms.Timer? ffsTimer;
-        private HashSet<string> seenFlfEntries = new HashSet<string>();
-        private string? lastFlfEntry = null;
+        private string? flfStartEntry = null;
+        private int flfEntryCount = 0;
 
         // Siemens init sequence state
         private bool siemensInitActive = false;
@@ -495,8 +495,8 @@ namespace CPU_Interface
             ffsMode = false;
             flfMode = false;
             ffsTimer?.Stop();
-            seenFlfEntries.Clear();
-            lastFlfEntry = null;
+            flfStartEntry = null;
+            flfEntryCount = 0;
             UpdateStatusBar();
         }
 
@@ -699,8 +699,6 @@ namespace CPU_Interface
                 BeginInvoke(new Action(() =>
                 {
                     string ascii = Encoding.ASCII.GetString(buffer);
-                    textBox1.AppendText(ascii);
-
                     rxBuffer.Append(ascii);
 
                     while (true)
@@ -713,6 +711,7 @@ namespace CPU_Interface
 
                         if (!string.IsNullOrEmpty(line))
                         {
+                            AppendRawLine(line);
                             allReceivedLines.Add(line);
 
                             // Stop init sequence when we receive any response
@@ -738,6 +737,16 @@ namespace CPU_Interface
                     textBox1.AppendText($"[RX ERROR] {ex.Message}{Environment.NewLine}");
                 }));
             }
+        }
+
+        private void AppendRawLine(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                return;
+            }
+
+            textBox1.AppendText(line + Environment.NewLine);
         }
 
         // ==============================
@@ -768,28 +777,38 @@ namespace CPU_Interface
             {
                 ffsMode = true;
                 flfMode = false;
+                flfStartEntry = null;
+                flfEntryCount = 0;
                 // Start timer to send "+" after a short delay
                 ffsTimer?.Stop();
                 ffsTimer?.Start();
             }
             else if (isFlFEntry)
             {
-                // Check for duplicate FLF entry - stop if repeating
                 string flfKey = upperLine;
-                if (seenFlfEntries.Contains(flfKey))
+                if (!flfMode)
+                {
+                    flfStartEntry = null;
+                    flfEntryCount = 0;
+                }
+
+                if (flfEntryCount > 0 && flfStartEntry != null && flfKey == flfStartEntry)
                 {
                     // Repeating entry detected - stop auto-scroll
                     flfMode = false;
                     ffsTimer?.Stop();
                     textBox1.AppendText($"[FLF LOG COMPLETE - Repeat detected]{Environment.NewLine}");
-                    seenFlfEntries.Clear();
-                    lastFlfEntry = null;
+                    flfStartEntry = null;
+                    flfEntryCount = 0;
                     return;
                 }
 
-                // New FLF entry - add to seen set and continue
-                seenFlfEntries.Add(flfKey);
-                lastFlfEntry = flfKey;
+                if (flfEntryCount == 0)
+                {
+                    flfStartEntry = flfKey;
+                }
+
+                flfEntryCount++;
                 flfMode = true;
                 ffsMode = false;
 
