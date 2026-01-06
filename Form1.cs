@@ -21,8 +21,8 @@ namespace CPU_Interface
         private bool ffsMode = false;
         private bool flfMode = false;
         private System.Windows.Forms.Timer? ffsTimer;
-        private string? flfStartEntry = null;
-        private int flfEntryCount = 0;
+        private string? lastFlfEntry = null;
+        private int flfRepeatCount = 0;
 
         // Siemens init sequence state
         private bool siemensInitActive = false;
@@ -335,7 +335,7 @@ namespace CPU_Interface
 
             // Initialize FFS timer for auto-sending "+" during fault log retrieval
             ffsTimer = new System.Windows.Forms.Timer();
-            ffsTimer.Interval = 500; // 500ms delay between "+" sends
+            ffsTimer.Interval = 750; // delay between "+" sends
             ffsTimer.Tick += FfsTimer_Tick;
 
             // Set 50/50 split on load
@@ -495,9 +495,14 @@ namespace CPU_Interface
             ffsMode = false;
             flfMode = false;
             ffsTimer?.Stop();
-            flfStartEntry = null;
-            flfEntryCount = 0;
+            lastFlfEntry = null;
+            flfRepeatCount = 0;
             UpdateStatusBar();
+        }
+
+        private void btnSend_Click(object? sender, EventArgs e)
+        {
+            SendCommand();
         }
 
         // ==============================
@@ -601,8 +606,8 @@ namespace CPU_Interface
                     flfMode = false;
                     ffsTimer?.Stop();
                     siemensInitActive = false;
-                    flfStartEntry = null;
-                    flfEntryCount = 0;
+                    lastFlfEntry = null;
+                    flfRepeatCount = 0;
 
                     textBox1.AppendText($"[DISCONNECTED] Siemens{Environment.NewLine}");
                     UpdateStatusBar();
@@ -777,38 +782,41 @@ namespace CPU_Interface
             {
                 ffsMode = true;
                 flfMode = false;
-                flfStartEntry = null;
-                flfEntryCount = 0;
+                lastFlfEntry = null;
+                flfRepeatCount = 0;
                 // Start timer to send "+" after a short delay
                 ffsTimer?.Stop();
                 ffsTimer?.Start();
             }
             else if (isFlFEntry)
             {
-                string flfKey = upperLine;
                 if (!flfMode)
                 {
-                    flfStartEntry = null;
-                    flfEntryCount = 0;
+                    lastFlfEntry = null;
+                    flfRepeatCount = 0;
                 }
 
-                if (flfEntryCount > 0 && flfStartEntry != null && flfKey == flfStartEntry)
+                if (string.Equals(lastFlfEntry, upperLine, StringComparison.OrdinalIgnoreCase))
+                {
+                    flfRepeatCount++;
+                }
+                else
+                {
+                    lastFlfEntry = upperLine;
+                    flfRepeatCount = 0;
+                }
+
+                if (flfRepeatCount >= 1)
                 {
                     // Repeating entry detected - stop auto-scroll
                     flfMode = false;
                     ffsTimer?.Stop();
                     textBox1.AppendText($"[FLF LOG COMPLETE - Repeat detected]{Environment.NewLine}");
-                    flfStartEntry = null;
-                    flfEntryCount = 0;
+                    lastFlfEntry = null;
+                    flfRepeatCount = 0;
                     return;
                 }
 
-                if (flfEntryCount == 0)
-                {
-                    flfStartEntry = flfKey;
-                }
-
-                flfEntryCount++;
                 flfMode = true;
                 ffsMode = false;
 
